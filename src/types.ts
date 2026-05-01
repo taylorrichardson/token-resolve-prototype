@@ -14,9 +14,12 @@ export interface ContentPlanNode {
   folderTemplate: string;
   actualFileName: string | null;
   isExpanded?: boolean;
-  matchedDocument?: Document | null;
+  matchedDocuments?: Document[];
   overrideName?: string;
   overrideFolder?: string;
+  expectedSteadyStateCount?: number;
+  mergeSection?: boolean;
+  fullDocumentType?: string;
 }
 
 export type MetadataContext = Record<string, string>;

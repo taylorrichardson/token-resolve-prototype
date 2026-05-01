@@ -6,7 +6,25 @@ export const sampleDocuments: Document[] = [
   { id: 'doc-3', name__v: 'Summary.docx', title__v: 'General Summary Doc', region__v: 'Global', language__v: 'en' },
   { id: 'doc-4', name__v: 'Decl-001.pdf', title__v: 'Declaration of Conformity', region__v: 'EU', language__v: 'en' },
   { id: 'doc-5', name__v: 'TOC-Main.pdf', title__v: 'Master Table of Contents', region__v: 'Global', language__v: 'en' },
-  { id: 'doc-6', name__v: 'Rationale-FR.pdf', title__v: 'Device Rationale (FR)', region__v: 'France', language__v: 'fr' }
+  { id: 'doc-6', name__v: 'Rationale-FR.pdf', title__v: 'Device Rationale (FR)', region__v: 'France', language__v: 'fr' },
+  
+  // Datasets
+  { id: 'data-1', name__v: 'dm.xpt', title__v: 'Demographics Dataset', region__v: 'Global', language__v: 'en' },
+  { id: 'data-2', name__v: 'ae.xpt', title__v: 'Adverse Events Dataset', region__v: 'Global', language__v: 'en' },
+  { id: 'data-3', name__v: 'vs.xpt', title__v: 'Vital Signs Dataset', region__v: 'Global', language__v: 'en' },
+  { id: 'data-4', name__v: 'lb.xpt', title__v: 'Laboratory Test Results Dataset', region__v: 'Global', language__v: 'en' },
+  { id: 'data-5', name__v: 'ex.xpt', title__v: 'Exposure Dataset', region__v: 'Global', language__v: 'en' },
+
+  // Literature References
+  { id: 'lit-1', name__v: 'Smith_2020.pdf', title__v: 'Efficacy of Nimbus in Adults', region__v: 'Global', language__v: 'en' },
+  { id: 'lit-2', name__v: 'Jones_2021.pdf', title__v: 'Long-term safety profile', region__v: 'Global', language__v: 'en' },
+  { id: 'lit-3', name__v: 'Lee_2019.pdf', title__v: 'Comparative study vs standard care', region__v: 'Global', language__v: 'en' },
+  { id: 'lit-4', name__v: 'Garcia_2022.pdf', title__v: 'Meta-analysis of adverse effects', region__v: 'Global', language__v: 'en' },
+  
+  // Nonclinical / Quality
+  { id: 'tox-1', name__v: 'tox-rep-001.pdf', title__v: '28-Day Tox Study', region__v: 'Global', language__v: 'en' },
+  { id: 'tox-2', name__v: 'tox-rep-002.pdf', title__v: '90-Day Tox Study', region__v: 'Global', language__v: 'en' },
+  { id: 'mfg-1', name__v: 'mfg-proc-v1.pdf', title__v: 'Drug Prod Mfg Process', region__v: 'Global', language__v: 'en' },
 ];
 
 export const initialMockData: ContentPlanNode[] = [
@@ -19,6 +37,7 @@ export const initialMockData: ContentPlanNode[] = [
     folderTemplate: '/${application_folder}/${submission_id}',
     actualFileName: null,
     isExpanded: true,
+    mergeSection: false,
   },
   {
     id: 'cover-letter',
@@ -28,6 +47,8 @@ export const initialMockData: ContentPlanNode[] = [
     status: 'Active',
     folderTemplate: '/${application_folder}/${submission_id}/m1/10-cover/${matched_document.name__v}',
     actualFileName: null,
+    expectedSteadyStateCount: 1,
+    matchedDocuments: [],
   },
   {
     id: 'app-form',
@@ -37,6 +58,8 @@ export const initialMockData: ContentPlanNode[] = [
     status: 'Active',
     folderTemplate: '/${application_folder}/${submission_id}/m1/12-form/form-${matched_document.language__v}.pdf',
     actualFileName: null,
+    expectedSteadyStateCount: 1,
+    matchedDocuments: [],
   },
   {
     id: 'general-summary',
@@ -46,6 +69,96 @@ export const initialMockData: ContentPlanNode[] = [
     status: 'Active',
     folderTemplate: '/${application_folder}/${submission_id}/m2/20-summary/summary.pdf',
     actualFileName: null,
+    expectedSteadyStateCount: 1,
+    matchedDocuments: [],
+  },
+  {
+    id: 'm5-clinical',
+    parentId: 'root-1',
+    nameTemplate: 'Module 5 - Clinical Study Reports',
+    type: 'Content Plan',
+    status: 'Active',
+    folderTemplate: '/${application_folder}/${submission_id}/m5',
+    actualFileName: null,
+    isExpanded: true,
+    mergeSection: false,
+  },
+  {
+    id: 'm5-datasets',
+    parentId: 'm5-clinical',
+    nameTemplate: 'Study Datasets - ${matched_document.name__v}',
+    type: 'Content Plan Item',
+    status: 'Active',
+    folderTemplate: '/${application_folder}/${submission_id}/m5/datasets/${matched_document.name__v}',
+    actualFileName: null,
+    expectedSteadyStateCount: 1,
+    matchedDocuments: [],
+  },
+  {
+    id: 'm5-literature',
+    parentId: 'm5-clinical',
+    nameTemplate: 'Literature Reference: ${matched_document.title__v}',
+    type: 'Content Plan Item',
+    status: 'Active',
+    folderTemplate: '/${application_folder}/${submission_id}/m5/literature/${matched_document.name__v}',
+    actualFileName: null,
+    expectedSteadyStateCount: 1,
+    matchedDocuments: [],
+  },
+  {
+    id: 'm5-bundled-report',
+    parentId: 'm5-clinical',
+    nameTemplate: 'Bundled Clinical Report - ${matched_document.title__v}',
+    type: 'Content Plan Item',
+    status: 'Active',
+    folderTemplate: '/${application_folder}/${submission_id}/m5/bundled-report/merged-report.pdf',
+    actualFileName: null,
+    expectedSteadyStateCount: 3, // Set up for bundling demonstration
+    matchedDocuments: [],
+  },
+  {
+    id: 'm3-quality',
+    parentId: 'root-1',
+    nameTemplate: 'Module 3 - Quality',
+    type: 'Content Plan',
+    status: 'Active',
+    folderTemplate: '/${application_folder}/${submission_id}/m3',
+    actualFileName: null,
+    isExpanded: true,
+    mergeSection: false,
+  },
+  {
+    id: 'm3-manufacturing',
+    parentId: 'm3-quality',
+    nameTemplate: 'Manufacturing Process Description',
+    type: 'Content Plan Item',
+    status: 'Active',
+    folderTemplate: '/${application_folder}/${submission_id}/m3/32-body-data/32p-drug-prod/32p3-manuf/${matched_document.name__v}',
+    actualFileName: null,
+    expectedSteadyStateCount: 1,
+    matchedDocuments: [],
+  },
+  {
+    id: 'm4-nonclinical',
+    parentId: 'root-1',
+    nameTemplate: 'Module 4 - Nonclinical Study Reports',
+    type: 'Content Plan',
+    status: 'Active',
+    folderTemplate: '/${application_folder}/${submission_id}/m4',
+    actualFileName: null,
+    isExpanded: true,
+    mergeSection: false,
+  },
+  {
+    id: 'm4-tox',
+    parentId: 'm4-nonclinical',
+    nameTemplate: 'Toxicology Study: ${matched_document.title__v}',
+    type: 'Content Plan Item',
+    status: 'Active',
+    folderTemplate: '/${application_folder}/${submission_id}/m4/42-study-rep/423-tox/${matched_document.name__v}',
+    actualFileName: null,
+    expectedSteadyStateCount: 1,
+    matchedDocuments: [],
   }
 ];
 

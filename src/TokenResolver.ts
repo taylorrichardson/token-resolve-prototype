@@ -18,15 +18,17 @@ export function normalizePath(str: string): string {
  * If the field_name is not present in the context, or if its value is blank,
  * the token remains unresolved in the string.
  */
-export function resolveToken(templateStr: string, metadata: MetadataContext, matchedDocument?: Document | null): string {
+export function resolveToken(templateStr: string, metadata: MetadataContext, matchedDocuments?: Document[]): string {
   if (!templateStr) return '';
 
   return templateStr.replace(/\$\{([^}]+)\}/g, (match, tokenName) => {
     // Handle matched document tokens
     if (tokenName.startsWith('matched_document.')) {
-      if (!matchedDocument) return match;
+      if (!matchedDocuments || matchedDocuments.length === 0) return match;
+      
+      // Resolve matched document tokens using the first document added
       const docField = tokenName.split('.')[1];
-      const docValue = matchedDocument[docField];
+      const docValue = matchedDocuments[0][docField];
       if (docValue !== undefined && docValue.trim() !== '') {
         return docValue;
       }

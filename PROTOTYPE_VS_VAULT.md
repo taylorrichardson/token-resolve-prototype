@@ -2,37 +2,49 @@
 
 This document outlines the core functional differences between the built prototype and the current token resolution behavior in Veeva Vault RIM. It also logs the architectural and design decisions made during the development of the prototype.
 
+## Current Prototype Functionality
+
+The prototype currently implements a highly interactive, dense, spreadsheet-like interface for managing Content Plans and their tokens:
+*   **Permanent Compact Grid View:** A single-page, full-screen grid view that merges the hierarchical tree with data columns, enforcing strict single-line row heights to mimic a dense Excel spreadsheet.
+*   **Token Inline Editor:** An interactive token editor built directly into table cells. It visually parses template strings, separating raw text from highlighted token blocks, and allows direct metadata manipulation.
+*   **Multi-Document Matching:** Supports dragging and dropping up to 1,000 documents onto a single Content Plan Item.
+*   **Content Plan Item Splitting:** Identifies when an item is "overmatched" (documents exceed the Expected Steady State Count) and provides a permanently visible inline "Split" action to automatically chunk extra documents into newly generated items in the tree.
+*   **Reactive Token Resolution:** Instant resolution of tokens based on document matches and global metadata.
+*   **Smart Path Normalization:** Real-time sanitization of paths and enforcement of correct file extensions.
+
+---
+
 ## Functional Differences: Prototype vs. Current Vault
 
-### 1. Real-Time vs. Action-Driven Resolution
-*   **Current Vault:** Token resolution is action-driven. If a field is blank or a document is updated, the token text remains unresolved until a user explicitly triggers the "Update Content Plan" or "Update Tokens in Fields" action.
-*   **Our Prototype:** Token resolution is **instant and reactive**. The moment a document is dragged onto a Content Plan Item (or when metadata is edited), the tokens in both the Name and the Published Output Location automatically resolve and update in the UI without needing a page refresh or manual action.
+### 1. Grid Layout and UX Density
+*   **Current Vault:** Vault typically employs a split-pane layout for Content Plans: a hierarchical tree view on the left, with a properties panel or document viewer occupying the center/right pane upon selection.
+*   **Our Prototype:** The prototype has been heavily optimized into a **permanent, unified Grid View**. The tree hierarchy and the properties columns (Name, Output Location, Steady State, Documents) are combined into a single, dense spreadsheet format where every row strictly adheres to a one-line height. Actions like "Split" or "Remove Document" are exposed directly in the grid rather than hidden behind action menus.
 
-### 2. Forgiving Manual Edits (Non-Destructive Overrides)
-*   **Current Vault:** If Vault detects that a user manually edited the non-token text of a record's name, the synchronization is broken permanently. The text and the token will no longer be refreshed by Vault during future updates.
-*   **Our Prototype:** The prototype introduces a **non-destructive override system**. 
-    * If a user clicks an item *without* a document, they are editing the raw underlying token template. 
-    * If they click an item *with* a matched document, they are creating a safe "override" of the resolved string. 
-    * If they later remove the document, the custom override is safely cleared, and the item perfectly reverts back to its original template string.
+### 2. Token Resolution Rules for Multiple Documents
+*   **Current Vault:** Vault only resolves matched document tokens (e.g., `${matched_document.title__v}`) when there is *exactly one* single document matched to the Content Plan Item (unless explicitly merging/bundling). If multiple documents are matched, the token remains unresolved until the item is split.
+*   **Our Prototype:** The prototype was updated to **always resolve tokens based on the first document added**, even if multiple documents are matched to the same Content Plan Item. This allows users to immediately see the expected output based on the primary document before initiating a split.
 
-### 3. Transparent Path Normalization
-*   **Current Vault:** Vault normalizes output paths (removing spaces, special characters like `~ \ : * ? < >`, lowercase conversions) and combines the Dossier parameters with the Item templates during the backend export/publishing process. Users don't easily see the final exact file path until it's generated.
-*   **Our Prototype:** Path normalization happens **live in the grid**. The "Published Output Location" column instantly shows the fully sanitized, lowercase, concatenated file path exactly as it will appear in the final export, allowing for preemptive error checking.
+### 3. Inline and Synchronous Token Editing
+*   **Current Vault:** Token templates are edited in standard text fields. If a user manually overrides the resolved text of a record's name, the automatic token synchronization is broken permanently. Updating a document's metadata requires navigating to that document's separate property page.
+*   **Our Prototype:** The `TokenInlineEditor` provides a revolutionary **synchronous editing** experience. It parses the template visually. If a user edits the text *inside* a token block (e.g., changing the text inside the `[TITLE]` token), they are actually directly editing the underlying document's metadata or global metadata. This updates the value globally wherever that token is used, without ever breaking the template synchronization.
 
-### 4. Automatic Extension Enforcement
-*   **Current Vault:** File extensions are dictated strictly by what resolves in the template. If a template expects a `.pdf` but a user matches a `.docx` document, the extension could be incorrect upon publishing.
-*   **Our Prototype:** The prototype features **smart extension enforcement**. It actively intercepts the matched document, extracts its true extension, and ensures the Published Output Location always ends with the correct extension, seamlessly replacing incorrect ones that might have been manually typed into the template.
+### 4. Real-Time vs. Action-Driven Resolution
+*   **Current Vault:** Token resolution is action-driven (requiring a user to run "Update Content Plan" or "Update Tokens in Fields").
+*   **Our Prototype:** Token resolution is **instant and reactive**. Dropping a document or typing in the inline editor immediately updates the UI across the entire grid.
 
-### 5. Publishing Gating & Validation
-*   **Current Vault:** Unresolved tokens simply render as raw text (e.g., `${field_name}`) and can sometimes slip through if a user isn't diligently checking their views before triggering a publishing action.
-*   **Our Prototype:** Introduces strict visual states and gating. Unresolved tokens are explicitly highlighted in a different color (blue) to signal missing data. Furthermore, the **"Move to Publishing" button is strictly disabled** until every Content Plan Item has a successfully matched document attached.
+### 5. Display of Unmatched Tokens
+*   **Current Vault:** Unmatched or empty tokens render as their raw literal strings (e.g., `${matched_document.name__v}`).
+*   **Our Prototype:** The prototype accurately mirrors this behavior, displaying the raw token string in blue when no data is available. However, because of the inline editor, users can click directly on this raw string to input the missing metadata on the fly.
+
+### 6. Automatic Extension Enforcement
+*   **Current Vault:** File extensions are dictated by the template. Incorrectly typed extensions might persist until publishing fails or generates an improper file.
+*   **Our Prototype:** Features **smart extension enforcement**. It intercepts the matched document's true extension and automatically corrects the Published Output Location to match, seamlessly replacing incorrect manual extensions.
 
 ---
 
 ## Architectural & Design Decisions
 
-* **Tech Stack:** Built as a single-page application using React, Vite, and Tailwind CSS. This allows for complex, reactive state management (like live token replacement across a tree-grid) without requiring a backend.
-* **Component Structure:** The app is designed around a central `App.tsx` that holds the state, utilizing a recursive `renderNode` function to generate the hierarchical "Tree Grid" layout that mimics the Vault UI.
-* **Token Resolution Logic:** Token replacement is decoupled into a dedicated `TokenResolver.ts` utility. It uses standard regex matching `/\$\{([^}]+)\}/g` to identify and safely inject data without evaluating code. 
-* **State Management:** The core state relies on a single `nodes` array containing `ContentPlanNode` objects. Modifying a template, dropping a document, or typing an override simply updates the object in this array, and React's reactivity handles instantly re-rendering the resolved tokens in the UI.
-* **Drag-and-Drop Implementation:** Relies on native HTML5 Drag and Drop APIs (`onDragStart`, `onDrop`, `onDragOver`). The `dataTransfer` payload only carries the `doc.id`, keeping the event payload lightweight while the UI looks up the full document object from the `sampleDocuments` store upon drop.
+* **Tech Stack:** React, Vite, and Tailwind CSS. This stack enables the complex reactive state management required for live token resolution across a dense tree-grid without a backend.
+* **Component Structure:** The app is designed around a central `App.tsx` utilizing a recursive `renderGridNode` function to generate the unified spreadsheet layout.
+* **TokenInlineEditor:** A custom component (`TokenInlineEditor.tsx`) that uses Regex to split a template string into interactive nodes (`EditableSpan`). It maintains strict `flex-nowrap`, `overflow-hidden`, and `text-ellipsis` styling to ensure it never expands beyond a single line height, preserving the spreadsheet density.
+* **State Management:** Core state relies on a `nodes` array of `ContentPlanNode` objects. Token replacement is handled purely through functional derivations (`TokenResolver.ts`), meaning the "resolved" state is never permanently saved to the database model; it is strictly a view-layer projection based on the live template and metadata.
